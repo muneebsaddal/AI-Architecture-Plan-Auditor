@@ -1,21 +1,25 @@
-# AI Architecture Plan Auditor
+# 🌱 Mostadam Site Sustainability Auditor
 
-This project implements a Proof of Concept (PoC) for an AI-powered architectural plan evaluator. The system takes a floor plan image and a set of sustainability rules (in PDF format), extracts features and rules using AI (specifically LLMs and image processing), and then generates a sustainability score with detailed explanations based on the provided rules.
+This project implements a specialized **AI-powered Auditor** for evaluating architectural site and floor plans against the **Mostadam Sustainability Guidelines**. 
 
-## Features
-- **Intelligent PDF Parser**: Automatically extracts sustainability rules from the **Mostadam PDF** (Commercial Buildings D+C).
-- **Vision-Based Feature Extraction**: Uses **GPT-4o Vision** to analyze floor plan layouts, identifying rooms, windows, doors, and spatial orientations without local dependencies.
-- **AI Scoring Engine**: Evaluates identified features against summarized rules to provide a score (1-5) for Daylight, Ventilation, and Efficiency.
-- **Rule Traceability**: Generates reports that clearly cite the specific rules used for the evaluation.
-- **Modern UI**: A responsive Streamlit dashboard for interactive demos.
+It specifically focuses on the **Site Sustainability (SS)** category, automating the verification of Keystone requirements and calculating a compliance score for key credits.
 
-## 🛠️ Tech Stack
-- **AI**: OpenAI GPT-4o (Vision) & GPT-4o-mini
-- **Frontend**: Streamlit
-- **PDF Processing**: pdfplumber
-- **Backend Logic**: Python-dotenv & modular pipeline architecture
+## 🚀 Features
+- **Markdown-Driven Intelligence**: Analyzes the full Mostadam ruleset using high-fidelity Markdown sources for maximum accuracy.
+- **Vision-Powered Site Analysis**: Uses **GPT-4o Vision** to "see" architectural features such as drainage systems, grease traps, and ecological footprints.
+- **Specialized Credit Scope**:
+    - **SS-01**: Sewage, Flood, and Rainwater Management (Keystone).
+    - **SS-02**: Ecological Assessment & Protection (Keystone).
+    - **SS-05**: Heat Island Effect Mitigation (Optional).
+- **Compliance Scorer**: Provides a single **Site Sustainability Score (out of 6 pts)** with a detailed methodology report.
+- **Keystone Alerts**: Automatically flags failure to meet mandatory Keystone requirements.
 
-## 🚀 Getting Started
+## ⚙️ Tech Stack
+- **LLM**: OpenAI GPT-4o (Vision) & GPT-4o-mini
+- **UI**: Streamlit (Premium Dark Mode Dashboard)
+- **Ruleset**: Markdown-based Mostadam Commercial D+C guidelines.
+
+## 🖥️ Getting Started
 
 1. **Install Dependencies**:
    ```bash
@@ -23,12 +27,13 @@ This project implements a Proof of Concept (PoC) for an AI-powered architectural
    ```
 
 2. **Configure API Key**:
-   Rename `.env.example` to `.env` and add your `OPENAI_API_KEY`. Alternatively, enter it directly in the app sidebar.
+   Create a `.env` file with your `OPENAI_API_KEY` or enter it directly in the app sidebar.
 
 3. **Run the Application**:
    ```bash
    streamlit run app.py
    ```
 
-## 📊 Presentation Materials
-- See `architecture_overview.md` for a high-resolution Mermaid flowchart of the system architecture.
+## 📊 Documentation & Presentation
+- **Architecture Overview**: See [architecture_overview.md](architecture_overview.md) for the system flowchart and strategic advantages for presentation.
+- **Ruleset**: The auditor uses the [Mostadam_Commercial_Buildings_DC.md](Mostadam_Commercial_Buildings_DC.md) as its ground truth ruleset.
