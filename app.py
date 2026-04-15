@@ -1,15 +1,22 @@
 import streamlit as st
 import os
 import json
+import hashlib
+from pathlib import Path
 from pipeline.scorer import score_site_sustainability
 from pipeline.image_processor import extract_features_with_vision
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
 load_dotenv()
 
-st.set_page_config(page_title="Site Sustainability Auditor", page_icon="⚖️", layout="wide")
+# ── Page Config ───────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="AI Architecture Plan Auditor",
+    page_icon="🏗️",
+    layout="wide"
+)
 
-# Custom CSS
+# ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
@@ -53,37 +60,110 @@ st.markdown("""
         border-left: 6px solid #4a9eff; margin-top: 10px;
         font-size: 0.95rem; color: #c9d1d9; line-height: 1.8;
     }
+    .summary-box {
+        background-color: #161b22; padding: 20px; border-radius: 12px;
+        border-left: 6px solid #f7c948; margin-top: 10px;
+        font-size: 0.95rem; color: #c9d1d9; line-height: 1.8;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("⚖️ Site Sustainability Auditor")
+# ── Title ─────────────────────────────────────────────────────────────────────
+st.title("🏗️ AI Architecture Plan Auditor")
 st.write("Evidence-based evaluation for Mostadam Credits **SS-01, SS-02, and SS-05**.")
 
-# ── API Key ──────────────────────────────────────────────────────────────
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    with st.sidebar:
-        api_key = st.text_input("Enter OpenAI API Key", type="password")
-        if api_key:
-            os.environ["OPENAI_API_KEY"] = api_key
+# ── Disk Cache Helpers ────────────────────────────────────────────────────────
+CACHE_DIR = Path(".audit_cache")
+CACHE_DIR.mkdir(exist_ok=True)
+
+def _cache_path(filename: str) -> Path:
+    """Return disk path for a cached audit result keyed by image filename hash."""
+    key = hashlib.md5(filename.encode()).hexdigest()
+    return CACHE_DIR / f"{key}.json"
+
+def save_to_cache(filename: str, image_bytes: bytes, result: dict):
+    cache = {
+        "filename": filename,
+        "image_b64": image_bytes.hex(),   # store as hex string
+        "result": result,
+    }
+    with open(_cache_path(filename), "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False)
+
+def load_from_cache(filename: str):
+    p = _cache_path(filename)
+    if not p.exists():
+        return None, None
+    with open(p, "r", encoding="utf-8") as f:
+        cache = json.load(f)
+    image_bytes = bytes.fromhex(cache["image_b64"])
+    return image_bytes, cache["result"]
+
+def load_latest_cache():
+    """Load the most-recently-modified cache file (used on fresh page load)."""
+    files = sorted(CACHE_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not files:
+        return None, None, None
+    with open(files[0], "r", encoding="utf-8") as f:
+        cache = json.load(f)
+    image_bytes = bytes.fromhex(cache["image_b64"])
+    return image_bytes, cache["result"], cache["filename"]
+
+# ── API Key ───────────────────────────────────────────────────────────────────
+ENV_FILE = ".env"
+
+def get_api_key():
+    """Read API key from env var (already loaded from .env via load_dotenv)."""
+    return os.getenv("OPENAI_API_KEY", "").strip()
+
+api_key = get_api_key()
+
+with st.sidebar:
+    st.markdown("### 🔑 API Key")
+    if api_key:
+        st.success("API Key loaded ✓", icon="✅")
+        if st.button("Change API Key"):
+            st.session_state.show_api_input = True
+    else:
+        st.session_state.show_api_input = True
+
+    if st.session_state.get("show_api_input", not bool(api_key)):
+        new_key = st.text_input("Enter OpenAI API Key", type="password", key="api_key_input")
+        if st.button("Save Key"):
+            if new_key.strip():
+                set_key(ENV_FILE, "OPENAI_API_KEY", new_key.strip())
+                os.environ["OPENAI_API_KEY"] = new_key.strip()
+                api_key = new_key.strip()
+                st.session_state.show_api_input = False
+                st.success("API Key saved to .env and will persist across reloads.")
+                st.rerun()
 
 if not api_key:
     st.warning("Please provide an OpenAI API Key in the sidebar to proceed.")
     st.stop()
 
-# ── Session State Init ────────────────────────────────────────────────────
-# Persists results across Streamlit reruns without re-calling the API
-if "audit_result" not in st.session_state:
-    st.session_state.audit_result = None   # parsed JSON dict
-if "audit_image" not in st.session_state:
-    st.session_state.audit_image = None    # raw image bytes
-if "audit_filename" not in st.session_state:
-    st.session_state.audit_filename = None # filename to detect new uploads
+# Ensure the live environment always has the key (important for pipeline modules)
+os.environ["OPENAI_API_KEY"] = api_key
 
-# ── File Uploader ─────────────────────────────────────────────────────────
+# ── Session State Init ────────────────────────────────────────────────────────
+if "audit_result" not in st.session_state:
+    st.session_state.audit_result = None
+if "audit_image" not in st.session_state:
+    st.session_state.audit_image = None
+if "audit_filename" not in st.session_state:
+    st.session_state.audit_filename = None
+
+# ── Restore from disk on fresh load ──────────────────────────────────────────
+if st.session_state.audit_result is None:
+    img_bytes, cached_result, cached_filename = load_latest_cache()
+    if cached_result is not None:
+        st.session_state.audit_result = cached_result
+        st.session_state.audit_image = img_bytes
+        st.session_state.audit_filename = cached_filename
+
+# ── File Uploader ─────────────────────────────────────────────────────────────
 uploaded_file = st.file_uploader("Upload Site/Floor Plan Image", type=["png", "jpg", "jpeg"])
 
-# Detect a genuinely new upload (different filename or first upload)
 new_upload = (
     uploaded_file is not None
     and uploaded_file.name != st.session_state.audit_filename
@@ -92,35 +172,43 @@ new_upload = (
 if new_upload:
     col1, col2 = st.columns([1, 1.5])
     with col1:
-        st.image(uploaded_file, caption="Uploaded Plan", use_container_width=True)
+        st.image(uploaded_file, caption="Uploaded Plan", width="stretch")
 
     with col2:
         with st.status("🏗️ Conducting Strict Evidence Audit...") as audit_status:
             image_bytes = uploaded_file.getvalue()
 
             st.write("👁️ Scanning for visual evidence...")
-            features = extract_features_with_vision(image_bytes, is_path=False)
+            # Re-import with updated env key in case it was just entered
+            from pipeline.image_processor import extract_features_with_vision as _extract
+            features = _extract(image_bytes, is_path=False)
 
             st.write("📖 Cross-referencing Mostadam SS Guidelines...")
-            result_json = score_site_sustainability(features)
+            from pipeline.scorer import score_site_sustainability as _score
+            result_json = _score(features, api_key=api_key)
 
             audit_status.update(label="Audit Complete!", state="complete", expanded=False)
 
-    # Save everything to session state
-    st.session_state.audit_image = uploaded_file.getvalue()
-    st.session_state.audit_filename = uploaded_file.name
+    image_bytes = uploaded_file.getvalue()
     try:
         parsed = json.loads(result_json)
-        parsed["_overall_calculation"] = parsed.get("overall_calculation", "")
         st.session_state.audit_result = parsed
+        st.session_state.audit_image = image_bytes
+        st.session_state.audit_filename = uploaded_file.name
+        save_to_cache(uploaded_file.name, image_bytes, parsed)
     except Exception:
         st.session_state.audit_result = {"_parse_error": result_json}
+        st.session_state.audit_image = image_bytes
+        st.session_state.audit_filename = uploaded_file.name
 
-elif st.session_state.audit_image is not None:
-    # Show previously uploaded image from memory on reload
-    st.image(st.session_state.audit_image, caption="Uploaded Plan (cached)", use_container_width=False, width=500)
+elif st.session_state.audit_image is not None and uploaded_file is None:
+    st.image(
+        st.session_state.audit_image,
+        caption=f"Cached Plan — {st.session_state.audit_filename}",
+        width=500,
+    )
 
-# ── Display Results ───────────────────────────────────────────────────────
+# ── Display Results ───────────────────────────────────────────────────────────
 if st.session_state.audit_result:
     data = st.session_state.audit_result
 
@@ -145,7 +233,14 @@ if st.session_state.audit_result:
 
         # 2. Executive Summary
         st.write("### 📝 Audit Executive Summary")
-        st.info(data.get("summary", "No summary available."))
+        summary_text = data.get("summary", "").strip()
+        if summary_text:
+            st.markdown(
+                f'<div class="summary-box">{summary_text}</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.warning("Summary not available in audit result.")
 
         # 3. Credit-by-Credit Breakdown
         st.write("### 📋 Credit-by-Credit Score Breakdown")
@@ -155,7 +250,7 @@ if st.session_state.audit_result:
             is_keystone = info.get("is_keystone", False)
             keystone_met = info.get("keystone_met", False)
             status_text = info.get("status", "Unverified")
-            explanation_str = info.get("explanation", "").replace("**", "")
+            explanation_str = info.get("explanation", "No explanation provided.").replace("**", "")
 
             keystone_badge = ""
             if is_keystone:
@@ -178,25 +273,34 @@ if st.session_state.audit_result:
             )
             st.markdown(html_card, unsafe_allow_html=True)
 
-        # 4. AI Report (plain, not collapsible)
-        overall = data.get("_overall_calculation", data.get("overall_calculation", "")).replace("**", "")
-        if overall:
-            st.write("### 📄 Report")
+        # 4. Detailed Audit Report
+        report_text = data.get("audit_report", data.get("overall_calculation", "")).strip().replace("**", "")
+        st.write("### 📄 Detailed Audit Report")
+        if report_text:
             st.markdown(
-                f'<div class="ai-report-box">{overall}</div>',
-                unsafe_allow_html=True
+                f'<div class="ai-report-box">{report_text}</div>',
+                unsafe_allow_html=True,
             )
+        else:
+            st.warning("No detailed report was returned by the auditor.")
 
 else:
     st.info("Upload a plan to conduct a strict sustainability audit.")
 
-# ── Sidebar ───────────────────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 st.sidebar.markdown("---")
-st.sidebar.markdown("### ⚖️ Auditor Settings")
-st.sidebar.write("**Mode:** STRICT EVIDENCE")
-st.sidebar.write("**Assumption Cap:** 25%")
-st.sidebar.markdown("---")
-st.sidebar.write("**Scope Focus:**")
+st.sidebar.write("## 🔎Scope Focus")
 st.sidebar.write("- **SS-01:** Rainwater & Sewage")
 st.sidebar.write("- **SS-02:** Ecological Protection")
 st.sidebar.write("- **SS-05:** Heat Island Effect")
+st.sidebar.markdown("---")
+
+# Clear cache button
+if st.sidebar.button("🗑️ Clear Cached Results"):
+    for f in CACHE_DIR.glob("*.json"):
+        f.unlink()
+    st.session_state.audit_result = None
+    st.session_state.audit_image = None
+    st.session_state.audit_filename = None
+    st.sidebar.success("Cache cleared.")
+    st.rerun()

@@ -5,21 +5,30 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+        return base64.b64encode(image_file.read()).decode("utf-8")
 
-def extract_features_with_vision(image_input, is_path=True):
+
+def extract_features_with_vision(image_input, is_path=True, api_key: str = None):
     """
-    Uses GPT-4o Vision to extract architectural and site features specifically 
-    for Site Sustainability (SS) evaluation. Accepts path or raw bytes to prevent OS locks.
+    Uses GPT-4o Vision to extract architectural and site features specifically
+    for Site Sustainability (SS) evaluation.
+
+    Args:
+        image_input: Absolute path (str) or raw bytes of the image.
+        is_path:     True if image_input is a file path, False if raw bytes.
+        api_key:     OpenAI API key. Falls back to OPENAI_API_KEY env var.
     """
+    # Always create the client at call-time so the key is never stale
+    key = api_key or os.getenv("OPENAI_API_KEY", "")
+    client = OpenAI(api_key=key)
+
     if is_path:
         base64_image = encode_image(image_input)
     else:
-        base64_image = base64.b64encode(image_input).decode('utf-8')
+        base64_image = base64.b64encode(image_input).decode("utf-8")
 
     prompt = """
 Analyze this floor plan and site layout for Site Sustainability features.
@@ -58,6 +67,7 @@ Keep descriptions concise and professional.
         return response.choices[0].message.content
     except Exception as e:
         return f"Error during vision processing: {e}"
+
 
 # Stubs for compatibility
 def preprocess_image(path): return None, None

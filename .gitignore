@@ -7,3 +7,4 @@ __pycache__/
 !Mostadam for Commercial Buildings (D+C).pdf
 bin/
 scratch/
+.audit_cache/
