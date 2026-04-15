@@ -21,59 +21,73 @@ def score_site_sustainability(features):
     """
     Evaluate floor plan features against the Site Sustainability (SS) rules.
     Specifically targeting: SS-01, SS-02, and SS-05.
+    Returns a granular point breakdown for backend consistency.
     """
     rules_text = load_rules()
     
-    # Specific credit summaries as provided by the user
+    # Specific credit summaries
     credit_guidelines = """
-    CRITICAL EVALUATION FOCUS:
+    CRITICAL EVALUATION FOCUS & POINT SCORING:
     
-    1. SS-01: Sewage, Flood and Rainwater Management (Keystone) - Total 3 pts
-       - Req #1 (Keystone - 1 pt): Sewage network connection or Treatment Plant. Grease traps for food prep.
-       - Req #2 (2 pts total with Req 3): Not in legal flood hazard area.
-       - Req #3: Rainwater Management Plan (site infiltration or redirection).
+    1. SS-01: Sewage, Flood and Rainwater Management (Keystone) - Total 3 pts available
+       - Requirement #1 (Keystone - 1 pt): Sewage network connection or Treatment Plant. Grease trap for kitchens.
+       - Requirement #2 (2 pts total with Req 3): Not in legal flood hazard area.
+       - Requirement #3: Rainwater Management Plan implementation.
     
-    2. SS-02: Ecological Assessment and Protection (Keystone) - Total 1 pt
-       - Req #1 & #2 (Keystone - 1 pt): Ecological Assessment by pro + mitigation measures identifying natural assets.
+    2. SS-02: Ecological Assessment and Protection (Keystone) - Total 1 pt available
+       - Requirement #1 & #2 (Keystone - 1 pt): Ecological Assessment by pro and Asset Protection measures.
     
-    3. SS-05: Heat Island Effect (Optional) - Total 2 pts
-       - Req #1 (1 pt): Specific SRI values (Hardscape >=45, Shade >=75, Roofs >=75).
-       - Req #2 (1 pt): Vegetative covering over >=70% of unused roof/shade.
+    3. SS-05: Heat Island Effect (Optional) - Total 2 pts available
+       - Requirement #1 (1 pt): High Solar Reflective Index (SRI) surfaces.
+       - Requirement #2 (1 pt): Vegetative covering over >=70% unused roof/shade.
     """
 
     prompt = f"""
 You are a Site Sustainability auditor for the Mostadam certification system.
 
 ### TASK:
-Evaluate the provided FLOOR PLAN FEATURES against the following specific Site Sustainability (SS) credits.
+Evaluate the FLOOR PLAN FEATURES against the provided GUIDELINES and RULES.
 
 ### GUIDELINES:
 {credit_guidelines}
 
 ### RULES SOURCE CONTENT (Reference):
-{rules_text[:100000]}  # Context limit check
+{rules_text[:100000]}
 
 ### FLOOR PLAN FEATURES:
 {features}
 
 ### INSTRUCTIONS:
-1. Calculate a single "Site Sustainability Score" out of 6 points.
-2. Provide an "Executive Summary" (concise).
-3. Provide a "Detailed Report" explaining the score for each credit (SS-01, SS-02, SS-05).
-   - For SS-01 and SS-02 (Keystones), clearly state if the Keystone requirement is met.
-   - For signals not visible in a 2D floor plan (like flood zones or SRI values), evaluate based on what is visible (e.g., presence of grease traps, rainwater drainage, roof vegetation) and list assumptions/recommendations for high-fidelity compliance.
+1. Provide granular point allocations for each credit (SS-01, SS-02, SS-05).
+2. For Keystone requirements, specifically confirm if they are met.
+3. If information is missing from the 2D plan, use professional architectural judgment to flag likely compliance or gaps.
 
 Return ONLY a JSON object:
 {{
- "score": int,
- "max_score": 6,
- "summary": "string",
- "detailed_report": {{
-    "SS-01": "explanation",
-    "SS-02": "explanation",
-    "SS-05": "explanation"
+ "summary": "Executive summary of compliance",
+ "credits": {{
+    "SS-01": {{
+        "points": int,
+        "max_points": 3,
+        "is_keystone": true,
+        "keystone_met": bool,
+        "explanation": "concise reasoning for assigned points"
+    }},
+    "SS-02": {{
+        "points": int,
+        "max_points": 1,
+        "is_keystone": true,
+        "keystone_met": bool,
+        "explanation": "concise reasoning for assigned points"
+    }},
+    "SS-05": {{
+        "points": int,
+        "max_points": 2,
+        "is_keystone": false,
+        "explanation": "concise reasoning for assigned points"
+    }}
  }},
- "calculation_logic": "string explaining how the points were tallied"
+ "overall_calculation": "Detail how the points were derived from the signals."
 }}
 """
 

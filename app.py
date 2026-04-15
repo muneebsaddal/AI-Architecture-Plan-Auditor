@@ -24,18 +24,29 @@ st.markdown("""
         border-radius: 5px;
         font-weight: bold;
     }
-    .status-box {
-        padding: 20px;
-        border-radius: 10px;
-        background-color: #1e2130;
-        border: 1px solid #1d976c;
-    }
     .report-card {
         background-color: #161b22;
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
         border-left: 5px solid #1d976c;
+        border-right: 1px solid #1d976c22;
+    }
+    .keystone-met {
+        color: #93f9b9;
+        font-weight: bold;
+        font-size: 0.8rem;
+        background: #1d976c22;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .keystone-fail {
+        color: #ff4b4b;
+        font-weight: bold;
+        font-size: 0.8rem;
+        background: #ff4b4b22;
+        padding: 2px 8px;
+        border-radius: 10px;
     }
     .metric-container {
         text-align: center;
@@ -91,15 +102,16 @@ if uploaded_file:
     
     try:
         data = json.loads(result_json)
+        credits = data.get("credits", {})
         
-        # 1. Big Score Metric
-        score = data.get("score", 0)
-        max_score = data.get("max_score", 6)
+        # 1. CALCULATE SCORE IN BACKEND (Guaranteed Consistency)
+        total_points = sum(c.get("points", 0) for c in credits.values())
+        max_possible = sum(c.get("max_points", 0) for c in credits.values())
         
         st.markdown(f"""
             <div class="metric-container">
-                <h1 style="color: #93f9b9; margin-bottom: 0;">{score} / {max_score}</h1>
-                <p style="color: #8b949e; font-size: 1.2rem;">Site Sustainability Score</p>
+                <h1 style="color: #93f9b9; margin-bottom: 0;">{total_points} / {max_possible}</h1>
+                <p style="color: #8b949e; font-size: 1.2rem;">Sustainability Site Score</p>
             </div>
         """, unsafe_allow_html=True)
         
@@ -109,29 +121,45 @@ if uploaded_file:
         
         # 3. Detailed Report
         st.write("### 📋 Detailed Compliance Report")
-        detailed = data.get("detailed_report", {})
         
-        for credit, report in detailed.items():
+        for credit_id, info in credits.items():
+            pts = info.get("points", 0)
+            mx = info.get("max_points", 0)
+            is_keystone = info.get("is_keystone", False)
+            keystone_met = info.get("keystone_met", False)
+            
+            keystone_badge = ""
+            if is_keystone:
+                if keystone_met:
+                    keystone_badge = '<span class="keystone-met">KEYSTONE MET</span>'
+                else:
+                    keystone_badge = '<span class="keystone-fail">KEYSTONE FAILED</span>'
+
             with st.container():
                 st.markdown(f"""
                     <div class="report-card">
-                        <h4 style="color: #1d976c; margin-top: 0;">{credit}</h4>
-                        <p style="color: #c9d1d9;">{report}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <h4 style="color: #1d976c; margin-top: 0;">{credit_id}</h4>
+                            <div style="text-align: right;">
+                                <span style="color: #93f9b9; font-weight: bold; font-size: 1.1rem;">{pts} / {mx}</span><br/>
+                                {keystone_badge}
+                            </div>
+                        </div>
+                        <p style="color: #c9d1d9; border-top: 1px solid #1d976c22; padding-top: 10px; margin-top: 10px;">{info.get('explanation', '')}</p>
                     </div>
                 """, unsafe_allow_html=True)
         
-        # 4. Calculation Logic
+        # 4. Calculation Logic & Vision Signals
         with st.expander("🔍 View Scoring Methodology & Vision Signals"):
-            st.write(data.get("calculation_logic", "Logic not provided."))
+            st.write(data.get("overall_calculation", "Logic not provided."))
             st.write("---")
             st.markdown("### 👁️ AI Vision: Extracted Site Signals")
             
             # Clean and render the vision signals
             signal_lines = features.split('\n')
             for line in signal_lines:
-                clean_line = line.strip().replace("**", "")  # Remove markdown bolding
+                clean_line = line.strip().replace("**", "")
                 if clean_line:
-                    # Identify category headers by emojis
                     if any(emoji in clean_line for emoji in ["🚰", "🍳", "🌦️", "🌳", "🔥", "📐"]):
                         st.markdown(f"""
                             <div style="background-color: #1e2130; padding: 12px; border-radius: 8px; border-left: 4px solid #93f9b9; margin-top: 15px; margin-bottom: 8px;">
