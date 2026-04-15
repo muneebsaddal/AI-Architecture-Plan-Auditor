@@ -4,7 +4,25 @@ End-to-end pipeline combining multimodal vision AI, regulatory knowledge injecti
 
 ---
 
-## System Flow
+## 🎯 Simplified Overview *(presentation)*
+
+```mermaid
+flowchart LR
+    A(["🖼️ Floor Plan\nImage"]) --> B["👁️ Vision AI\nGPT-4o"]
+    B --> C["🧮 Compliance\nScorer"]
+    D(["📄 Mostadam\nRuleset"]) --> C
+    C --> E(["📊 Audit\nReport"])
+
+    style A fill:#1e2130,stroke:#1d976c,stroke-width:2px,color:#c9d1d9
+    style B fill:#0b3c2c,stroke:#93f9b9,stroke-width:2px,color:#c9d1d9
+    style C fill:#0b3c2c,stroke:#93f9b9,stroke-width:2px,color:#c9d1d9
+    style D fill:#1e2130,stroke:#1d976c,stroke-width:2px,color:#c9d1d9
+    style E fill:#1b1b2f,stroke:#4a9eff,stroke-width:2px,color:#c9d1d9
+```
+
+---
+
+## 🔬 Detailed System Flow *(technical reference)*
 
 ```mermaid
 flowchart TD
