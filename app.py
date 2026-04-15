@@ -1,14 +1,13 @@
 import streamlit as st
 import os
 import json
-from pipeline.pdf_parser import extract_pdf_text
-from pipeline.scorer import extract_rules, score_plan
+from pipeline.scorer import score_site_sustainability
 from pipeline.image_processor import extract_features_with_vision
 from dotenv import load_dotenv
 
 load_dotenv()
 
-st.set_page_config(page_title="AI Floorplan Auditor", page_icon="🏗️", layout="wide")
+st.set_page_config(page_title="Site Sustainability Auditor", page_icon="🌱", layout="wide")
 
 # Custom CSS for premium look
 st.markdown("""
@@ -18,7 +17,7 @@ st.markdown("""
         color: #ffffff;
     }
     .stButton>button {
-        background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+        background: linear-gradient(45deg, #1d976c 0%, #93f9b9 100%);
         color: white;
         border: none;
         padding: 10px 20px;
@@ -29,91 +28,116 @@ st.markdown("""
         padding: 20px;
         border-radius: 10px;
         background-color: #1e2130;
-        border: 1px solid #4facfe;
+        border: 1px solid #1d976c;
+    }
+    .report-card {
+        background-color: #161b22;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 5px solid #1d976c;
+    }
+    .metric-container {
+        text-align: center;
+        padding: 20px;
+        background: #1e2130;
+        border-radius: 15px;
+        border: 2px solid #1d976c;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🏗️ AI Architecture Plan Auditor")
-st.write("Evaluate floor plans against Mostadam sustainability rules automatically.")
+st.title("🌱 Site Sustainability Auditor")
+st.write("Specialized evaluation for Mostadam Credits **SS-01, SS-02, and SS-05**.")
 
-# Minimal UI - Mostadam PDF is hardcoded
-PDF_PATH = "Mostadam for Commercial Buildings (D+C).pdf"
-
-if not os.path.exists(PDF_PATH):
-    st.error(f"Missing rules file: {PDF_PATH}. Please ensure it is in the project root.")
-    st.stop()
-
-# Sidebar for API config or status
-with st.sidebar:
-    st.header("Settings")
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
+# Check for API Key
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    with st.sidebar:
         api_key = st.text_input("Enter OpenAI API Key", type="password")
         if api_key:
             os.environ["OPENAI_API_KEY"] = api_key
-    
-    if api_key:
-        st.success("API Key Active")
-    else:
-        st.warning("Please provide an API Key.")
 
-uploaded_file = st.file_uploader("Upload Floor Plan Image", type=["png", "jpg", "jpeg"])
+if not api_key:
+    st.warning("Please provide an OpenAI API Key in the sidebar to proceed.")
+    st.stop()
 
-if uploaded_file and api_key:
-    col1, col2 = st.columns(2)
+uploaded_file = st.file_uploader("Upload Site/Floor Plan Image", type=["png", "jpg", "jpeg"])
+
+if uploaded_file:
+    col1, col2 = st.columns([1, 1.5])
     
     with col1:
-        st.image(uploaded_file, caption="Uploaded Floor Plan", use_container_width=True)
+        st.image(uploaded_file, caption="Uploaded Plan", use_container_width=True)
         
     with col2:
-        with st.status("🚀 Processing...", expanded=True) as status:
+        with st.status("🏗️ Auditing Site Sustainability...") as status:
             # 1. Save temp image
-            with open("temp_plan.png", "wb") as f:
+            with open("temp_plan_ss.png", "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            # 2. Extract Rules (Cache this in a real app, but here we do it once)
-            st.write("🔍 Extracting Sustainability Rules...")
-            pdf_text = extract_pdf_text(PDF_PATH)
-            rules = extract_rules(pdf_text)
+            # 2. Extract Vision Features
+            st.write("👁️ Analyzing Spatial Signals...")
+            features = extract_features_with_vision("temp_plan_ss.png")
             
-            # 3. Extract Image Features
-            st.write("🧠 Analyzing Floor Plan Layout...")
-            features = extract_features_with_vision("temp_plan.png")
+            # 3. Score against Markdown Rules
+            st.write("📖 Cross-referencing Mostadam SS Guidelines...")
+            result_json = score_site_sustainability(features)
             
-            # 4. Scoring
-            st.write("⚖️ Evaluating Compliance...")
-            result_json = score_plan(features, rules)
-            
-            status.update(label="Analysis Complete!", state="complete", expanded=False)
+            status.update(label="Audit Complete!", state="complete", expanded=False)
 
-    # Display Results
+    # --- Display Results ---
     st.divider()
     
     try:
         data = json.loads(result_json)
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Daylight", f"{data.get('daylight', 0)}/5")
-        c2.metric("Ventilation", f"{data.get('ventilation', 0)}/5")
-        c3.metric("Efficiency", f"{data.get('efficiency', 0)}/5")
+        # 1. Big Score Metric
+        score = data.get("score", 0)
+        max_score = data.get("max_score", 6)
         
-        st.subheader("Summary")
+        st.markdown(f"""
+            <div class="metric-container">
+                <h1 style="color: #93f9b9; margin-bottom: 0;">{score} / {max_score}</h1>
+                <p style="color: #8b949e; font-size: 1.2rem;">Site Sustainability Score</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 2. Executive Summary
+        st.write("### 📝 Executive Summary")
         st.info(data.get("summary", "No summary available."))
         
-        st.subheader("Rule Traceability")
-        st.code(data.get("traceability", "No traceability data."))
+        # 3. Detailed Report
+        st.write("### 📋 Detailed Compliance Report")
+        detailed = data.get("detailed_report", {})
         
+        for credit, report in detailed.items():
+            with st.container():
+                st.markdown(f"""
+                    <div class="report-card">
+                        <h4 style="color: #1d976c; margin-top: 0;">{credit}</h4>
+                        <p style="color: #c9d1d9;">{report}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+        
+        # 4. Calculation Logic
+        with st.expander("🔍 View Scoring Methodology"):
+            st.write(data.get("calculation_logic", "Logic not provided."))
+            st.write("---")
+            st.write("**Extracted Vision Signals:**")
+            st.code(features)
+
     except Exception as e:
-        st.subheader("Raw Analysis")
+        st.error(f"Error parsing audit results: {e}")
+        st.write("### Raw Analysis")
         st.write(result_json)
-    
-    with st.expander("View Extracted Signals"):
-        st.write("### Extracted Rules")
-        st.write(rules)
-        st.write("### Extracted Features")
-        st.write(features)
 
 else:
-    if not uploaded_file:
-        st.info("Please upload a floor plan image to begin evaluation.")
+    st.info("Upload a plan to analyze Site Sustainability compliance.")
+
+# Footer info
+st.sidebar.markdown("---")
+st.sidebar.write("**Scope Focus:**")
+st.sidebar.write("- **SS-01:** Rainwater & Sewage")
+st.sidebar.write("- **SS-02:** Ecological Protection")
+st.sidebar.write("- **SS-05:** Heat Island Effect")

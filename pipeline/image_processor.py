@@ -13,20 +13,23 @@ def encode_image(image_path):
 
 def extract_features_with_vision(image_path):
     """
-    Uses GPT-4o Vision to extract architectural features from the floor plan.
+    Uses GPT-4o Vision to extract architectural and site features specifically 
+    for Site Sustainability (SS) evaluation.
     """
     base64_image = encode_image(image_path)
 
     prompt = """
-Analyze this floor plan image and extract key features for sustainability evaluation.
+Analyze this floor plan and site layout for Site Sustainability features.
 
-Please identify:
-1. Rooms and their approximate dimensions or space allocation.
-2. Presence and location of windows and doors (important for daylight and ventilation).
-3. Overall layout orientation (if indicated).
-4. Room types (Living, Bedroom, Kitchen, etc.).
+Please look for and describe:
+1. SITE SERVICES: Sewage lines, drainage points, or indicators of connection to a network.
+2. FOOD SERVICE: If a kitchen or food prep area exists, are there indicators of grease traps or specialized drainage?
+3. RAINWATER/FLOOD: Visible rainwater harvesting systems, roof drainage (gutters, downspouts), or flood mitigation features (elevated entries, etc.).
+4. ECOLOGY: Natural assets, vegetation, or protected areas shown on the site plan.
+5. HEAT ISLAND (Hardscape/Roof): Type of roof (green/vegetated?), shade structures, and hardscape materials.
+6. GENERAL LAYOUT: Room types and overall built area vs. open space.
 
-Return the information as a structured list of features.
+Return the findings as a structured text description for an auditor.
 """
 
     try:
@@ -52,7 +55,7 @@ Return the information as a structured list of features.
     except Exception as e:
         return f"Error during vision processing: {e}"
 
-# Simplified stubs for backward compatibility if needed in app.py logic
+# Stubs for compatibility
 def preprocess_image(path): return None, None
 def detect_contours(thresh): return []
 def extract_text(path): return ""
