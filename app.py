@@ -126,18 +126,24 @@ if uploaded_file:
             st.write("---")
             st.markdown("### 👁️ AI Vision: Extracted Site Signals")
             
-            # Beautified rendering of the features string
+            # Clean and render the vision signals
             signal_lines = features.split('\n')
             for line in signal_lines:
-                if line.strip():
-                    if any(emoji in line for emoji in ["🚰", "🍳", "🌦️", "🌳", "🔥", "📐"]):
+                clean_line = line.strip().replace("**", "")  # Remove markdown bolding
+                if clean_line:
+                    # Identify category headers by emojis
+                    if any(emoji in clean_line for emoji in ["🚰", "🍳", "🌦️", "🌳", "🔥", "📐"]):
                         st.markdown(f"""
-                            <div style="background-color: #0d1117; padding: 10px; border-radius: 5px; border-left: 3px solid #1d976c; margin-bottom: 5px;">
-                                <strong style="color: #93f9b9;">{line}</strong>
+                            <div style="background-color: #1e2130; padding: 12px; border-radius: 8px; border-left: 4px solid #93f9b9; margin-top: 15px; margin-bottom: 8px;">
+                                <span style="color: #93f9b9; font-weight: 700; font-size: 1.1rem; font-family: 'Inter', sans-serif;">{clean_line}</span>
                             </div>
                         """, unsafe_allow_html=True)
                     else:
-                        st.markdown(f"<div style='margin-left: 20px; color: #8b949e; font-size: 0.9rem;'>{line}</div>", unsafe_allow_html=True)
+                        st.markdown(f"""
+                            <div style="margin-left: 25px; color: #c9d1d9; font-size: 0.95rem; line-height: 1.6; font-family: 'Inter', sans-serif;">
+                                • {clean_line}
+                            </div>
+                        """, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Error parsing audit results: {e}")
