@@ -1,0 +1,9 @@
+.env
+temp_plan.png
+temp.png
+__pycache__/
+*.pdf
+# except the core rules PDF
+!Mostadam for Commercial Buildings (D+C).pdf
+bin/
+scratch/
