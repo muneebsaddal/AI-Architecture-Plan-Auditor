@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-st.set_page_config(page_title="Site Sustainability Auditor", page_icon="🌱", layout="wide")
+st.set_page_config(page_title="Strict Site Sustainability Auditor", page_icon="⚖️", layout="wide")
 
 # Custom CSS for premium look
 st.markdown("""
@@ -26,40 +26,60 @@ st.markdown("""
     }
     .report-card {
         background-color: #161b22;
-        padding: 20px;
-        border-radius: 10px;
+        padding: 24px;
+        border-radius: 12px;
         margin-bottom: 20px;
-        border-left: 5px solid #1d976c;
+        border-left: 6px solid #1d976c;
         border-right: 1px solid #1d976c22;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .keystone-met {
         color: #93f9b9;
         font-weight: bold;
-        font-size: 0.8rem;
-        background: #1d976c22;
-        padding: 2px 8px;
-        border-radius: 10px;
+        font-size: 0.75rem;
+        background: rgba(29, 151, 108, 0.2);
+        padding: 4px 10px;
+        border-radius: 12px;
+        border: 1px solid #1d976c;
+        letter-spacing: 0.05rem;
     }
     .keystone-fail {
         color: #ff4b4b;
         font-weight: bold;
+        font-size: 0.75rem;
+        background: rgba(255, 75, 75, 0.2);
+        padding: 4px 10px;
+        border-radius: 12px;
+        border: 1px solid #ff4b4b;
+        letter-spacing: 0.05rem;
+    }
+    .status-badge {
         font-size: 0.8rem;
-        background: #ff4b4b22;
+        color: #8b949e;
+        background: #0d1117;
         padding: 2px 8px;
-        border-radius: 10px;
+        border-radius: 4px;
+        margin-right: 10px;
     }
     .metric-container {
         text-align: center;
-        padding: 20px;
+        padding: 25px;
         background: #1e2130;
         border-radius: 15px;
         border: 2px solid #1d976c;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .point-display {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        color: #93f9b9;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🌱 Site Sustainability Auditor")
-st.write("Specialized evaluation for Mostadam Credits **SS-01, SS-02, and SS-05**.")
+st.title("⚖️ Strict Site Sustainability Auditor")
+st.write("Specialized, evidence-based evaluation for Mostadam Credits **SS-01, SS-02, and SS-05**.")
 
 # Check for API Key
 api_key = os.getenv("OPENAI_API_KEY")
@@ -82,17 +102,17 @@ if uploaded_file:
         st.image(uploaded_file, caption="Uploaded Plan", use_container_width=True)
         
     with col2:
-        with st.status("🏗️ Auditing Site Sustainability...") as status:
+        with st.status("🏗️ Conducting Strict Evidence Audit...") as status:
             # 1. Save temp image
             with open("temp_plan_ss.png", "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
             # 2. Extract Vision Features
-            st.write("👁️ Analyzing Spatial Signals...")
+            st.write("👁️ Scanning for visual evidence...")
             features = extract_features_with_vision("temp_plan_ss.png")
             
             # 3. Score against Markdown Rules
-            st.write("📖 Cross-referencing Mostadam SS Guidelines...")
+            st.write("📖 Cross-referencing under Strict Mode...")
             result_json = score_site_sustainability(features)
             
             status.update(label="Audit Complete!", state="complete", expanded=False)
@@ -102,31 +122,32 @@ if uploaded_file:
     
     try:
         data = json.loads(result_json)
-        credits = data.get("credits", {})
+        credits_data = data.get("credits", {})
         
-        # 1. CALCULATE SCORE IN BACKEND (Guaranteed Consistency)
-        total_points = sum(c.get("points", 0) for c in credits.values())
-        max_possible = sum(c.get("max_points", 0) for c in credits.values())
+        # 1. Total Score Calculation
+        total_points = sum(c.get("points", 0) for c in credits_data.values())
+        max_possible = sum(c.get("max_points", 0) for c in credits_data.values())
         
         st.markdown(f"""
             <div class="metric-container">
                 <h1 style="color: #93f9b9; margin-bottom: 0;">{total_points} / {max_possible}</h1>
-                <p style="color: #8b949e; font-size: 1.2rem;">Sustainability Site Score</p>
+                <p style="color: #8b949e; font-size: 1.2rem;">Final Sustainability Audit Score</p>
             </div>
         """, unsafe_allow_html=True)
         
         # 2. Executive Summary
-        st.write("### 📝 Executive Summary")
+        st.write("### 📝 Audit Executive Summary")
         st.info(data.get("summary", "No summary available."))
         
-        # 3. Detailed Report
-        st.write("### 📋 Detailed Compliance Report")
+        # 3. Detailed Report (RE-BEAUTIFIED & BUG-FIXED)
+        st.write("### 📋 Credit-by-Credit Score Breakdown")
         
-        for credit_id, info in credits.items():
+        for credit_id, info in credits_data.items():
             pts = info.get("points", 0)
             mx = info.get("max_points", 0)
             is_keystone = info.get("is_keystone", False)
             keystone_met = info.get("keystone_met", False)
+            status_text = info.get("status", "Unverified")
             
             keystone_badge = ""
             if is_keystone:
@@ -138,22 +159,27 @@ if uploaded_file:
             with st.container():
                 st.markdown(f"""
                     <div class="report-card">
-                        <div style="display: flex; justify-content: space-between; align-items: start;">
-                            <h4 style="color: #1d976c; margin-top: 0;">{credit_id}</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <h4 style="color: #1d976c; margin: 0;">{credit_id}</h4>
+                                <span class="status-badge">{status_text}</span>
+                            </div>
                             <div style="text-align: right;">
-                                <span style="color: #93f9b9; font-weight: bold; font-size: 1.1rem;">{pts} / {mx}</span><br/>
+                                <div class="point-display">{pts} <span style="font-size: 1rem; color: #8b949e;">/ {mx}</span></div>
                                 {keystone_badge}
                             </div>
                         </div>
-                        <p style="color: #c9d1d9; border-top: 1px solid #1d976c22; padding-top: 10px; margin-top: 10px;">{info.get('explanation', '')}</p>
+                        <div style="color: #c9d1d9; border-top: 1px solid #1d976c22; padding-top: 15px; margin-top: 10px; font-size: 0.95rem; line-height: 1.6;">
+                            {info.get('explanation', '')}
+                        </div>
                     </div>
                 """, unsafe_allow_html=True)
         
         # 4. Calculation Logic & Vision Signals
-        with st.expander("🔍 View Scoring Methodology & Vision Signals"):
+        with st.expander("🔍 Audit Methodology & Visual Evidence Scanner"):
             st.write(data.get("overall_calculation", "Logic not provided."))
             st.write("---")
-            st.markdown("### 👁️ AI Vision: Extracted Site Signals")
+            st.markdown("### 👁️ AI Vision: Identified Site Evidence")
             
             # Clean and render the vision signals
             signal_lines = features.split('\n')
@@ -179,9 +205,13 @@ if uploaded_file:
         st.write(result_json)
 
 else:
-    st.info("Upload a plan to analyze Site Sustainability compliance.")
+    st.info("Upload a plan to conduct a strict sustainability audit.")
 
 # Footer info
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⚖️ Auditor Settings")
+st.sidebar.write("**Mode:** STRICT EVIDENCE")
+st.sidebar.write("**Assumption Cap:** 25%")
 st.sidebar.markdown("---")
 st.sidebar.write("**Scope Focus:**")
 st.sidebar.write("- **SS-01:** Rainwater & Sewage")

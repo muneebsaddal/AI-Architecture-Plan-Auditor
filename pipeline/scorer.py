@@ -20,33 +20,35 @@ def load_rules():
 def score_site_sustainability(features):
     """
     Evaluate floor plan features against the Site Sustainability (SS) rules.
-    Specifically targeting: SS-01, SS-02, and SS-05.
-    Returns a granular point breakdown for backend consistency.
+    STRICT AUDIT MODE: Minimal assumptions, focus on clear visual evidence.
     """
     rules_text = load_rules()
     
     # Specific credit summaries
     credit_guidelines = """
-    CRITICAL EVALUATION FOCUS & POINT SCORING:
+    STRICT COMPLIANCE GUIDELINES:
     
-    1. SS-01: Sewage, Flood and Rainwater Management (Keystone) - Total 3 pts available
+    1. SS-01: Sewage, Flood and Rainwater Management (Keystone) - Total 3 pts
        - Requirement #1 (Keystone - 1 pt): Sewage network connection or Treatment Plant. Grease trap for kitchens.
        - Requirement #2 (2 pts total with Req 3): Not in legal flood hazard area.
        - Requirement #3: Rainwater Management Plan implementation.
     
-    2. SS-02: Ecological Assessment and Protection (Keystone) - Total 1 pt available
+    2. SS-02: Ecological Assessment and Protection (Keystone) - Total 1 pt
        - Requirement #1 & #2 (Keystone - 1 pt): Ecological Assessment by pro and Asset Protection measures.
     
-    3. SS-05: Heat Island Effect (Optional) - Total 2 pts available
+    3. SS-05: Heat Island Effect (Optional) - Total 2 pts
        - Requirement #1 (1 pt): High Solar Reflective Index (SRI) surfaces.
        - Requirement #2 (1 pt): Vegetative covering over >=70% unused roof/shade.
     """
 
     prompt = f"""
-You are a Site Sustainability auditor for the Mostadam certification system.
+You are a STRICT Site Sustainability auditor for the Mostadam certification system.
 
-### TASK:
-Evaluate the FLOOR PLAN FEATURES against the provided GUIDELINES and RULES.
+### AUDIT PRINCIPLES:
+1. **STRICT EVIDENCE**: Only award points if clear visual evidence is present in the "FEATURES" list. 
+2. **NO ASSUMPTIONS**: Stop using "professional judgment" to fill gaps. If a feature is not clearly drawn/described, AWARD 0 POINTS and mark as "Unverified".
+3. **25% ASSUMPTION CAP**: You must limit any assumed compliance to less than 25% of the total score. Default to "Insufficient Evidence" for ambiguous signals.
+4. **SITE CONTEXT**: Since this is a 2D floor plan, signals like "Flood Area" or "SRI values" are impossible to verify visually. Do NOT award points for these; instead, mark them as "Requires External Documentation".
 
 ### GUIDELINES:
 {credit_guidelines}
@@ -54,40 +56,42 @@ Evaluate the FLOOR PLAN FEATURES against the provided GUIDELINES and RULES.
 ### RULES SOURCE CONTENT (Reference):
 {rules_text[:100000]}
 
-### FLOOR PLAN FEATURES:
+### FLOOR PLAN FEATURES (The only source of proof):
 {features}
 
 ### INSTRUCTIONS:
-1. Provide granular point allocations for each credit (SS-01, SS-02, SS-05).
-2. For Keystone requirements, specifically confirm if they are met.
-3. If information is missing from the 2D plan, use professional architectural judgment to flag likely compliance or gaps.
+- Break down points for SS-01, SS-02, and SS-05.
+- For Keystones, you MUST confirm if the visual proof is present.
 
 Return ONLY a JSON object:
 {{
- "summary": "Executive summary of compliance",
+ "summary": "Audit summary focusing on found evidence",
  "credits": {{
     "SS-01": {{
         "points": int,
         "max_points": 3,
         "is_keystone": true,
         "keystone_met": bool,
-        "explanation": "concise reasoning for assigned points"
+        "status": "Verified | Unverified",
+        "explanation": "concise reasoning emphasizing what WAS or WAS NOT seen"
     }},
     "SS-02": {{
         "points": int,
         "max_points": 1,
         "is_keystone": true,
         "keystone_met": bool,
-        "explanation": "concise reasoning for assigned points"
+        "status": "Verified | Unverified",
+        "explanation": "concise reasoning emphasizing what WAS or WAS NOT seen"
     }},
     "SS-05": {{
         "points": int,
         "max_points": 2,
         "is_keystone": false,
-        "explanation": "concise reasoning for assigned points"
+        "status": "Verified | Unverified",
+        "explanation": "concise reasoning emphasizing what WAS or WAS NOT seen"
     }}
  }},
- "overall_calculation": "Detail how the points were derived from the signals."
+ "overall_calculation": "Strict tally of points based on visual signals."
 }}
 """
 
