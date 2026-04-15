@@ -21,15 +21,16 @@ def extract_features_with_vision(image_path):
     prompt = """
 Analyze this floor plan and site layout for Site Sustainability features.
 
-Please look for and describe:
-1. SITE SERVICES: Sewage lines, drainage points, or indicators of connection to a network.
-2. FOOD SERVICE: If a kitchen or food prep area exists, are there indicators of grease traps or specialized drainage?
-3. RAINWATER/FLOOD: Visible rainwater harvesting systems, roof drainage (gutters, downspouts), or flood mitigation features (elevated entries, etc.).
-4. ECOLOGY: Natural assets, vegetation, or protected areas shown on the site plan.
-5. HEAT ISLAND (Hardscape/Roof): Type of roof (green/vegetated?), shade structures, and hardscape materials.
-6. GENERAL LAYOUT: Room types and overall built area vs. open space.
+Please return the findings using these EXACT headings and emojis:
 
-Return the findings as a structured text description for an auditor.
+🚰 SITE SERVICES: Describe sewage lines, drainage points, or network connections.
+🍳 FOOD SERVICE: Describe kitchen/food prep areas and potential grease trap locations.
+🌦️ WATER MANAGEMENT: Describe rainwater harvesting, roof drainage, or flood features.
+🌳 ECOLOGY: Describe natural assets, vegetation, or protected areas.
+🔥 HEAT ISLAND: Describe roof type, shade structures, and hardscape materials.
+📐 SPATIAL LAYOUT: Describe general room types and coverage ratios.
+
+Keep descriptions concise and professional.
 """
 
     try:

@@ -121,11 +121,23 @@ if uploaded_file:
                 """, unsafe_allow_html=True)
         
         # 4. Calculation Logic
-        with st.expander("🔍 View Scoring Methodology"):
+        with st.expander("🔍 View Scoring Methodology & Vision Signals"):
             st.write(data.get("calculation_logic", "Logic not provided."))
             st.write("---")
-            st.write("**Extracted Vision Signals:**")
-            st.code(features)
+            st.markdown("### 👁️ AI Vision: Extracted Site Signals")
+            
+            # Beautified rendering of the features string
+            signal_lines = features.split('\n')
+            for line in signal_lines:
+                if line.strip():
+                    if any(emoji in line for emoji in ["🚰", "🍳", "🌦️", "🌳", "🔥", "📐"]):
+                        st.markdown(f"""
+                            <div style="background-color: #0d1117; padding: 10px; border-radius: 5px; border-left: 3px solid #1d976c; margin-bottom: 5px;">
+                                <strong style="color: #93f9b9;">{line}</strong>
+                            </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"<div style='margin-left: 20px; color: #8b949e; font-size: 0.9rem;'>{line}</div>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Error parsing audit results: {e}")
