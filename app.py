@@ -109,13 +109,12 @@ if uploaded_file:
         
     with col2:
         with st.status("🏗️ Conducting Strict Evidence Audit...") as status:
-            # 1. Save temp image
-            with open("temp_plan_ss.png", "wb") as f:
-                f.write(uploaded_file.getbuffer())
+            # 1. Bypass filesystem to prevent OSError/Lock issues
+            image_bytes = uploaded_file.getvalue()
             
-            # 2. Extract Vision Features
+            # 2. Extract Vision Features directly from memory
             st.write("👁️ Scanning for visual evidence...")
-            features = extract_features_with_vision("temp_plan_ss.png")
+            features = extract_features_with_vision(image_bytes, is_path=False)
             
             # 3. Score against Markdown Rules
             st.write("📖 Cross-referencing under Strict Mode...")

@@ -11,12 +11,15 @@ def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
 
-def extract_features_with_vision(image_path):
+def extract_features_with_vision(image_input, is_path=True):
     """
     Uses GPT-4o Vision to extract architectural and site features specifically 
-    for Site Sustainability (SS) evaluation.
+    for Site Sustainability (SS) evaluation. Accepts path or raw bytes to prevent OS locks.
     """
-    base64_image = encode_image(image_path)
+    if is_path:
+        base64_image = encode_image(image_input)
+    else:
+        base64_image = base64.b64encode(image_input).decode('utf-8')
 
     prompt = """
 Analyze this floor plan and site layout for Site Sustainability features.
