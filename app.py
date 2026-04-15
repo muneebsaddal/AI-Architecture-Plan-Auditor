@@ -12,6 +12,12 @@ st.set_page_config(page_title="Strict Site Sustainability Auditor", page_icon="â
 # Custom CSS for premium look
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif;
+    }
+    
     .main {
         background-color: #0e1117;
         color: #ffffff;
@@ -155,6 +161,8 @@ if uploaded_file:
                     keystone_badge = '<span class="keystone-met">KEYSTONE MET</span>'
                 else:
                     keystone_badge = '<span class="keystone-fail">KEYSTONE FAILED</span>'
+                    
+            explanation_str = info.get('explanation', '').replace("**", "")
 
             with st.container():
                 st.markdown(f"""
@@ -170,7 +178,7 @@ if uploaded_file:
                             </div>
                         </div>
                         <div style="color: #c9d1d9; border-top: 1px solid #1d976c22; padding-top: 15px; margin-top: 10px; font-size: 0.95rem; line-height: 1.6;">
-                            {info.get('explanation', '')}
+                            {explanation_str}
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
