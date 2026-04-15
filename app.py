@@ -180,27 +180,30 @@ if uploaded_file:
         
         # 4. Calculation Logic & Vision Signals
         with st.expander("🔍 Audit Methodology & Visual Evidence Scanner"):
-            st.write(data.get("overall_calculation", "Logic not provided."))
-            st.write("---")
-            st.markdown("### 👁️ AI Vision: Identified Site Evidence")
-            
-            # Clean and render the vision signals
+            # Clean and render the vision signals only
             signal_lines = features.split('\n')
             for line in signal_lines:
                 clean_line = line.strip().replace("**", "")
-                if clean_line:
-                    if any(emoji in clean_line for emoji in ["🚰", "🍳", "🌦️", "🌳", "🔥", "📐"]):
-                        st.markdown(
-                            f'<div style="background-color: #1e2130; padding: 12px; border-radius: 8px; border-left: 4px solid #93f9b9; margin-top: 15px; margin-bottom: 8px;">'
-                            f'<span style="color: #93f9b9; font-weight: 700; font-size: 1.1rem; font-family: \'Inter\', sans-serif;">{clean_line}</span></div>',
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        st.markdown(
-                            f'<div style="margin-left: 25px; color: #c9d1d9; font-size: 0.95rem; line-height: 1.6; font-family: \'Inter\', sans-serif;">'
-                            f'• {clean_line}</div>',
-                            unsafe_allow_html=True
-                        )
+                if not clean_line:
+                    continue
+                # Check if this line contains an emoji category header
+                if any(emoji in clean_line for emoji in ["🚰", "🍳", "🌦️", "🌳", "🔥", "📐"]):
+                    # Split header from description at the colon
+                    parts = clean_line.split(":", 1)
+                    header = parts[0].strip() + ":"
+                    description = parts[1].strip() if len(parts) > 1 else ""
+                    st.markdown(
+                        f'<div style="background-color: #1e2130; padding: 14px 16px; border-radius: 8px; border-left: 4px solid #93f9b9; margin-top: 15px; margin-bottom: 4px;">'
+                        f'<div style="color: #93f9b9; font-weight: 700; font-size: 1.0rem; font-family: Inter, sans-serif; margin-bottom: 4px;">{header}</div>'
+                        f'<div style="color: #c9d1d9; font-size: 0.9rem; line-height: 1.6; font-family: Inter, sans-serif;">{description}</div>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(
+                        f'<div style="margin-left: 20px; color: #8b949e; font-size: 0.9rem; line-height: 1.6; font-family: Inter, sans-serif;">• {clean_line}</div>',
+                        unsafe_allow_html=True
+                    )
 
     except Exception as e:
         st.error(f"Error parsing audit results: {e}")
