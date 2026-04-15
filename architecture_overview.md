@@ -7,17 +7,44 @@ End-to-end pipeline combining multimodal vision AI, regulatory knowledge injecti
 ## 🎯 Simplified Overview *(presentation)*
 
 ```mermaid
-flowchart LR
-    A(["🖼️ Floor Plan\nImage"]) --> B["👁️ Vision AI\nGPT-4o"]
-    B --> C["🧮 Compliance\nScorer"]
-    D(["📄 Mostadam\nRuleset"]) --> C
-    C --> E(["📊 Audit\nReport"])
+flowchart TD
+    %% Input Layer
+    subgraph INPUT ["1. Data Input"]
+        A["Floor Plan Image"] 
+        B["Mostadam Ruleset"]
+        C["OpenAI Key"]
+    end
 
-    style A fill:#1e2130,stroke:#1d976c,stroke-width:2px,color:#c9d1d9
-    style B fill:#0b3c2c,stroke:#93f9b9,stroke-width:2px,color:#c9d1d9
-    style C fill:#0b3c2c,stroke:#93f9b9,stroke-width:2px,color:#c9d1d9
-    style D fill:#1e2130,stroke:#1d976c,stroke-width:2px,color:#c9d1d9
-    style E fill:#1b1b2f,stroke:#4a9eff,stroke-width:2px,color:#c9d1d9
+    %% Processing Layer
+    subgraph PROC ["2. Processing & Reasoning"]
+        direction TB
+        P1["<b>image_processor.py</b><br/>Extracts visual features"]
+        P2["<b>scorer.py</b><br/>Injects ruleset + visual features"]
+        
+        P1 -->|"Feature Text"| P2
+    end
+
+    %% Logic Gate
+    subgraph LOGIC ["3. Compliance Logic"]
+        L1{Keystone Check}
+        L2[Point Calculation]
+        L3[Narrative Generation]
+    end
+
+    %% Storage & Display
+    subgraph OUT ["4. Output & Persistence"]
+        D1["Streamlit Dashboard<br/>(Score Cards & Reports)"]
+    end
+
+    %% Connections
+    A & C --> P1
+    B & P1 --> P2
+    P2 --> L1 & L2 & L3
+    L1 & L2 & L3 --> D1
+
+    %% Styling
+    style P2 fill:#0b3c2c,stroke:#1d976c,color:#fff
+    style D1 fill:#1e1e2e,stroke:#f7c948,color:#fff
 ```
 
 ---
