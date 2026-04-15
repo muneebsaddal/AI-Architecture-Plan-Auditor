@@ -133,12 +133,13 @@ if uploaded_file:
         total_points = sum(c.get("points", 0) for c in credits_data.values())
         max_possible = sum(c.get("max_points", 0) for c in credits_data.values())
         
-        st.markdown(f"""
-            <div class="metric-container">
-                <h1 style="color: #93f9b9; margin-bottom: 0;">{total_points} / {max_possible}</h1>
-                <p style="color: #8b949e; font-size: 1.2rem;">Final Sustainability Audit Score</p>
-            </div>
-        """, unsafe_allow_html=True)
+        html_metric = (
+            f'<div class="metric-container">'
+            f'<h1 style="color: #93f9b9; margin-bottom: 0;">{total_points} / {max_possible}</h1>'
+            f'<p style="color: #8b949e; font-size: 1.2rem;">Final Sustainability Audit Score</p>'
+            f'</div>'
+        )
+        st.markdown(html_metric, unsafe_allow_html=True)
         
         # 2. Executive Summary
         st.write("### 📝 Audit Executive Summary")
@@ -164,23 +165,18 @@ if uploaded_file:
             explanation_str = info.get('explanation', '').replace("**", "")
 
             with st.container():
-                st.markdown(f"""
-                    <div class="report-card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div>
-                                <h4 style="color: #1d976c; margin: 0;">{credit_id}</h4>
-                                <span class="status-badge">{status_text}</span>
-                            </div>
-                            <div style="text-align: right;">
-                                <div class="point-display">{pts} <span style="font-size: 1rem; color: #8b949e;">/ {mx}</span></div>
-                                {keystone_badge}
-                            </div>
-                        </div>
-                        <div style="color: #c9d1d9; border-top: 1px solid #1d976c22; padding-top: 15px; margin-top: 10px; font-size: 0.95rem; line-height: 1.6;">
-                            {explanation_str}
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
+                html_card = (
+                    f'<div class="report-card">'
+                    f'<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">'
+                    f'<div><h4 style="color: #1d976c; margin: 0;">{credit_id}</h4>'
+                    f'<span class="status-badge">{status_text}</span></div>'
+                    f'<div style="text-align: right;">'
+                    f'<div class="point-display">{pts} <span style="font-size: 1rem; color: #8b949e;">/ {mx}</span></div>'
+                    f'{keystone_badge}</div></div>'
+                    f'<div style="color: #c9d1d9; border-top: 1px solid #1d976c22; padding-top: 15px; margin-top: 10px; font-size: 0.95rem; line-height: 1.6;">'
+                    f'{explanation_str}</div></div>'
+                )
+                st.markdown(html_card, unsafe_allow_html=True)
         
         # 4. Calculation Logic & Vision Signals
         with st.expander("🔍 Audit Methodology & Visual Evidence Scanner"):
@@ -194,17 +190,17 @@ if uploaded_file:
                 clean_line = line.strip().replace("**", "")
                 if clean_line:
                     if any(emoji in clean_line for emoji in ["🚰", "🍳", "🌦️", "🌳", "🔥", "📐"]):
-                        st.markdown(f"""
-                            <div style="background-color: #1e2130; padding: 12px; border-radius: 8px; border-left: 4px solid #93f9b9; margin-top: 15px; margin-bottom: 8px;">
-                                <span style="color: #93f9b9; font-weight: 700; font-size: 1.1rem; font-family: 'Inter', sans-serif;">{clean_line}</span>
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(
+                            f'<div style="background-color: #1e2130; padding: 12px; border-radius: 8px; border-left: 4px solid #93f9b9; margin-top: 15px; margin-bottom: 8px;">'
+                            f'<span style="color: #93f9b9; font-weight: 700; font-size: 1.1rem; font-family: \'Inter\', sans-serif;">{clean_line}</span></div>',
+                            unsafe_allow_html=True
+                        )
                     else:
-                        st.markdown(f"""
-                            <div style="margin-left: 25px; color: #c9d1d9; font-size: 0.95rem; line-height: 1.6; font-family: 'Inter', sans-serif;">
-                                • {clean_line}
-                            </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(
+                            f'<div style="margin-left: 25px; color: #c9d1d9; font-size: 0.95rem; line-height: 1.6; font-family: \'Inter\', sans-serif;">'
+                            f'• {clean_line}</div>',
+                            unsafe_allow_html=True
+                        )
 
     except Exception as e:
         st.error(f"Error parsing audit results: {e}")
