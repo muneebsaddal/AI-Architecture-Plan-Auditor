@@ -1,0 +1,7 @@
+pdfplumber
+pypdf
+openai
+streamlit
+opencv-python
+python-dotenv
+pillow
