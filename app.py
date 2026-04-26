@@ -9,6 +9,25 @@ from dotenv import load_dotenv, set_key
 
 load_dotenv()
 
+SCOPE_OPTIONS = {
+    "All": {
+        "label": "All",
+        "credits": ["SS-01", "SS-02", "SS-05"],
+    },
+    "SS-01: Rainwater & Sewage": {
+        "label": "SS-01: Rainwater & Sewage",
+        "credits": ["SS-01"],
+    },
+    "SS-02: Ecological Protection": {
+        "label": "SS-02: Ecological Protection",
+        "credits": ["SS-02"],
+    },
+    "SS-05: Heat Island Effect": {
+        "label": "SS-05: Heat Island Effect",
+        "credits": ["SS-05"],
+    },
+}
+
 # ── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Architecture Plan Auditor",
@@ -65,6 +84,37 @@ st.markdown("""
         border-left: 6px solid #f7c948; margin-top: 10px;
         font-size: 0.95rem; color: #c9d1d9; line-height: 1.8;
     }
+    .sidebar-section-title {
+        font-size: 1.02rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin: 0.25rem 0 0.35rem 0;
+    }
+    .rating-panel {
+        background: linear-gradient(180deg, rgba(22,27,34,0.96) 0%, rgba(13,17,23,0.96) 100%);
+        border: 1px solid rgba(145, 255, 184, 0.18);
+        border-radius: 14px;
+        padding: 14px 14px 10px 14px;
+        margin-bottom: 0.6rem;
+    }
+    .rating-subtitle {
+        color: #8b949e;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        margin-top: 0.35rem;
+    }
+    .rating-pill {
+        display: inline-block;
+        margin-top: 0.45rem;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(29,151,108,0.18);
+        color: #93f9b9;
+        border: 1px solid rgba(147,249,185,0.35);
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.02rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -109,6 +159,53 @@ def load_latest_cache():
     image_bytes = bytes.fromhex(cache["image_b64"])
     return image_bytes, cache["result"], cache["filename"]
 
+
+def filter_credits_by_scope(credits_data: dict, selected_scope: str) -> dict:
+    """Return only the credits that belong to the chosen scope."""
+    credit_ids = SCOPE_OPTIONS.get(selected_scope, SCOPE_OPTIONS["All"])["credits"]
+    return {credit_id: credits_data[credit_id] for credit_id in credit_ids if credit_id in credits_data}
+
+
+def build_scoped_summary(scope_label: str, credits_data: dict, total_points: int, max_possible: int) -> str:
+    """Generate a short summary for the selected scope."""
+    if not credits_data:
+        return f"No credits were available for the selected scope: {scope_label}."
+
+    credit_parts = []
+    for credit_id, info in credits_data.items():
+        pts = info.get("points", 0)
+        mx = info.get("max_points", 0)
+        status = info.get("status", "Unverified")
+        credit_parts.append(f"{credit_id} ({pts}/{mx}, {status})")
+
+    joined_credits = "; ".join(credit_parts)
+    return (
+        f"Scoped to {scope_label}, the dashboard currently shows {len(credits_data)} credit(s) "
+        f"with a score of {total_points}/{max_possible}. "
+        f"Visible credits: {joined_credits}."
+    )
+
+
+def build_scoped_report(scope_label: str, credits_data: dict, total_points: int, max_possible: int) -> str:
+    """Build a filtered narrative report from the visible credit explanations."""
+    if not credits_data:
+        return f"No credit data was available for the selected scope: {scope_label}."
+
+    lines = [
+        f"Scoped Audit Report for {scope_label}",
+        f"Scoped score: {total_points}/{max_possible}",
+        "",
+        "Included credits:",
+    ]
+    for credit_id, info in credits_data.items():
+        pts = info.get("points", 0)
+        mx = info.get("max_points", 0)
+        status = info.get("status", "Unverified")
+        explanation = info.get("explanation", "No explanation provided.").replace("**", "")
+        lines.append(f"- {credit_id}: {pts}/{mx} | {status} | {explanation}")
+
+    return "\n".join(lines)
+
 # ── API Key ───────────────────────────────────────────────────────────────────
 ENV_FILE = ".env"
 
@@ -118,8 +215,56 @@ def get_api_key():
 
 api_key = get_api_key()
 
+# ── Session State Init ────────────────────────────────────────────────────────
+if "audit_result" not in st.session_state:
+    st.session_state.audit_result = None
+if "audit_image" not in st.session_state:
+    st.session_state.audit_image = None
+if "audit_filename" not in st.session_state:
+    st.session_state.audit_filename = None
+if "selected_scope" not in st.session_state:
+    st.session_state.selected_scope = "All"
+
 with st.sidebar:
-    st.markdown("### 🔑 API Key")
+
+    st.markdown("## 🌟 Mostadam Rating Level")
+    logo_path = Path("green_logo.jpg")
+    # st.markdown('<div class="rating-panel">', unsafe_allow_html=True)
+    rating_col_1, rating_col_2 = st.columns([0.42, 1.0], gap="small")
+    with rating_col_1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=56)
+    with rating_col_2:
+        # st.markdown(
+        #     "<div style='font-weight:800; color:#93f9b9; font-size:1.02rem; line-height:1.1;'>Mostadam rating level</div>",
+        #     unsafe_allow_html=True,
+        # )
+        st.markdown(
+            "<div class='rating-pill'>Green</div>",
+            unsafe_allow_html=True,
+        )
+    st.markdown(
+        "<div class='rating-subtitle'>"
+        "Focus area: Site Sustainability only. Other Mostadam criteria remain outside this dashboard scope."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    st.markdown("## 🔎 Scope Filter")
+    current_scope = st.session_state.get("selected_scope", "All")
+    st.radio(
+        "Select the site sustainability scope",
+        options=list(SCOPE_OPTIONS.keys()),
+        index=list(SCOPE_OPTIONS.keys()).index(current_scope)
+        if current_scope in SCOPE_OPTIONS
+        else 0,
+        key="selected_scope",
+        label_visibility="collapsed",
+    )
+    st.markdown("---")
+    st.markdown("## 🔑 API Key")
     if api_key:
         st.success("API Key loaded ✓", icon="✅")
         if st.button("Change API Key"):
@@ -144,14 +289,6 @@ if not api_key:
 
 # Ensure the live environment always has the key (important for pipeline modules)
 os.environ["OPENAI_API_KEY"] = api_key
-
-# ── Session State Init ────────────────────────────────────────────────────────
-if "audit_result" not in st.session_state:
-    st.session_state.audit_result = None
-if "audit_image" not in st.session_state:
-    st.session_state.audit_image = None
-if "audit_filename" not in st.session_state:
-    st.session_state.audit_filename = None
 
 # ── Restore from disk on fresh load ──────────────────────────────────────────
 if st.session_state.audit_result is None:
@@ -209,6 +346,8 @@ elif st.session_state.audit_image is not None and uploaded_file is None:
     )
 
 # ── Display Results ───────────────────────────────────────────────────────────
+selected_scope = st.session_state.selected_scope
+
 if st.session_state.audit_result:
     data = st.session_state.audit_result
 
@@ -217,23 +356,29 @@ if st.session_state.audit_result:
         st.write(data["_parse_error"])
     else:
         credits_data = data.get("credits", {})
+        scoped_credits = filter_credits_by_scope(credits_data, selected_scope)
 
         st.divider()
 
         # 1. Big Score
-        total_points = sum(c.get("points", 0) for c in credits_data.values())
-        max_possible = sum(c.get("max_points", 0) for c in credits_data.values())
+        total_points = sum(c.get("points", 0) for c in scoped_credits.values())
+        max_possible = sum(c.get("max_points", 0) for c in scoped_credits.values())
         html_metric = (
             f'<div class="metric-container">'
             f'<h1 style="color: #93f9b9; margin-bottom: 0;">{total_points} / {max_possible}</h1>'
             f'<p style="color: #8b949e; font-size: 1.2rem;">Final Sustainability Audit Score</p>'
+            f'<p style="color: #8b949e; font-size: 0.95rem; margin-top: 8px;">'
+            f'Scoped to {selected_scope}</p>'
             f'</div>'
         )
         st.markdown(html_metric, unsafe_allow_html=True)
 
         # 2. Executive Summary
         st.write("### 📝 Audit Executive Summary")
-        summary_text = data.get("summary", "").strip()
+        if selected_scope == "All":
+            summary_text = data.get("summary", "").strip()
+        else:
+            summary_text = build_scoped_summary(selected_scope, scoped_credits, total_points, max_possible)
         if summary_text:
             st.markdown(
                 f'<div class="summary-box">{summary_text}</div>',
@@ -244,7 +389,7 @@ if st.session_state.audit_result:
 
         # 3. Credit-by-Credit Breakdown
         st.write("### 📋 Credit-by-Credit Score Breakdown")
-        for credit_id, info in credits_data.items():
+        for credit_id, info in scoped_credits.items():
             pts = info.get("points", 0)
             mx = info.get("max_points", 0)
             is_keystone = info.get("is_keystone", False)
@@ -274,11 +419,14 @@ if st.session_state.audit_result:
             st.markdown(html_card, unsafe_allow_html=True)
 
         # 4. Detailed Audit Report
-        report_text = data.get("audit_report", data.get("overall_calculation", "")).strip().replace("**", "")
+        if selected_scope == "All":
+            report_text = data.get("audit_report", data.get("overall_calculation", "")).strip().replace("**", "")
+        else:
+            report_text = build_scoped_report(selected_scope, scoped_credits, total_points, max_possible)
         st.write("### 📄 Detailed Audit Report")
         if report_text:
             st.markdown(
-                f'<div class="ai-report-box">{report_text}</div>',
+                f'<div class="ai-report-box">{report_text.replace(chr(10), "<br>")}</div>',
                 unsafe_allow_html=True,
             )
         else:
@@ -286,15 +434,7 @@ if st.session_state.audit_result:
 
 else:
     st.info("Upload a plan to conduct a strict sustainability audit.")
-
-# ── Sidebar ───────────────────────────────────────────────────────────────────
 st.sidebar.markdown("---")
-st.sidebar.write("## 🔎Scope Focus")
-st.sidebar.write("- **SS-01:** Rainwater & Sewage")
-st.sidebar.write("- **SS-02:** Ecological Protection")
-st.sidebar.write("- **SS-05:** Heat Island Effect")
-st.sidebar.markdown("---")
-
 # Clear cache button
 if st.sidebar.button("🗑️ Clear Cached Results"):
     for f in CACHE_DIR.glob("*.json"):
